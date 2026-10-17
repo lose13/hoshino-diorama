@@ -1,0 +1,91 @@
+{
+  "render_comparison": {
+    "view": "overview",
+    "quality": "balanced",
+    "before_draw_calls": 4916,
+    "after_draw_calls": 2028,
+    "reduction_percent": 58.7,
+    "historical": true
+  },
+  "lighting_coverage": {
+    "星影茶屋": 9,
+    "木造縁側庭院": 7,
+    "樱町木造公寓": 9,
+    "青叶现代住宅": 9,
+    "昭和绿瓦小院": 5,
+    "文鸟古书店": 9
+  },
+  "browser_checks": {
+    "rain_clear_snow_roundtrip": true,
+    "snow_toggle_off_on": true,
+    "bottom_player_absent": true,
+    "bundled_script_syntax": true
+  },
+  "spatial_regressions": {
+    "test_command": "node verify-scene-space.mjs",
+    "clipped_light_triangles_with_uv_interpolation": true,
+    "rotated_parent_and_corner_bounds": true,
+    "fully_outside_light_removed": true,
+    "continuous_snow_heights_through_3600_seconds": true,
+    "camera_independent_particle_positions": true,
+    "browser_orbit_and_courtyard_checked": true,
+    "browser_shader_errors": 0
+  },
+  "snowbank_review": {
+    "continuous_curb_heightfield": true,
+    "separate_ellipsoid_drifts_removed": true,
+    "crossing_gaps_preserved": true,
+    "warm_storefront_closeup_checked": true,
+    "bundled_script_syntax": true
+  },
+  "idle_orbit": {
+    "test_command": "node verify-orbit.mjs",
+    "pitch_degrees": 22,
+    "front_degrees_per_second": 3.5,
+    "side_multiplier": 1.25,
+    "rear_max_multiplier": 1.5,
+    "drag_pause_browser_checked": true,
+    "snow_speed_multiplier": 1.5,
+    "initial_azimuth_degrees": 22,
+    "preferred_wide_radius": 92,
+    "rear_degrees_per_second": 5.25,
+    "reference_framing_checked": true
+  },
+  "direct_camera_toggle": {
+    "story_front_then_iso": true,
+    "courtyard_then_iso": true,
+    "extra_focus_button_removed": true
+  },
+  "twilight": {
+    "original_sky_and_ambient_palette_matches": true,
+    "low_angle_gradient_visible": true,
+    "output_color_space_corrected": true
+  },
+  "surface_and_signage": {
+    "separate_crosswalk_faces_removed": true,
+    "road_shader_compiles_in_browser": true,
+    "analytic_antialiasing": true,
+    "front_sign_texture": [
+      4096,
+      320
+    ],
+    "side_sign_texture": [
+      1536,
+      384
+    ],
+    "anisotropic_filtering": true,
+    "sign_closeup_checked": true
+  },
+  "fixed_rendering": {
+    "quality_ui_removed": true,
+    "automatic_downgrade_removed": true,
+    "pixel_ratio": 1.5,
+    "reflection_size": 512,
+    "reflection_every_frame": true,
+    "shadows_enabled": true,
+    "static_transforms_frozen": 734,
+    "door_and_roof_browser_checked": true,
+    "rain_snow_roundtrip_checked": true,
+    "browser_shader_errors": 0
+  }
+}

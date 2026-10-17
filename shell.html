@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>桜町三丁目 · 星野マート 24H 微缩街区</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      overflow: hidden;
+      background: #080d1a;
+      font-family: 'PingFang SC', 'Hiragino Sans', 'Microsoft YaHei', system-ui, sans-serif;
+      color: #f1f5f9;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+
+    /* Left Interactive & Synchronized Feature Panel */
+    #ui-panel {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 20;
+      width: 312px;
+      max-height: calc(100vh - 150px);
+      overflow-y: auto;
+      background: rgba(10, 15, 29, 0.86);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(148, 163, 184, 0.25);
+      border-radius: 14px;
+      padding: 14px 15px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
+      transition: border-color 0.25s ease;
+    }
+    #ui-panel.director-active {
+      border-color: rgba(245, 158, 11, 0.55);
+    }
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      padding-bottom: 8px;
+      margin-bottom: 9px;
+    }
+    .title-row h1 {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: #fde68a;
+      letter-spacing: 0.4px;
+    }
+    .tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: linear-gradient(135deg, #10b981, #0284c7);
+      color: #fff;
+      font-family: ui-monospace, monospace;
+    }
+    .sec-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      margin: 8px 0 5px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+    button.btn {
+      appearance: none;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(30, 41, 59, 0.82);
+      color: #e2e8f0;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6.5px 6px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.18s;
+      white-space: nowrap;
+    }
+    button.btn:hover {
+      background: #334155;
+      border-color: #fbbf24;
+    }
+    button.btn.active {
+      background: #f59e0b;
+      border-color: #fef08a;
+      color: #0f172a;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+    }
+    button.btn.demo-highlight {
+      outline: 2px solid #38bdf8;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.65);
+    }
+    .slider-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 7px;
+      font-size: 11px;
+      color: #cbd5e1;
+    }
+    input[type="range"] {
+      flex: 1;
+      accent-color: #f59e0b;
+      cursor: pointer;
+    }
+
+    /* Top-Right Cinema Feature Callout Badge */
+    #feature-hud {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 20;
+      width: 318px;
+      background: rgba(10, 15, 29, 0.86);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(56, 189, 248, 0.35);
+      border-radius: 14px;
+      padding: 13px 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
+    }
+    .hud-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .mode-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 99px;
+      background: rgba(245, 158, 11, 0.18);
+      border: 1px solid rgba(245, 158, 11, 0.55);
+      color: #fde68a;
+    }
+    .mode-pill.manual {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.55);
+      color: #7dd3fc;
+    }
+    .rec-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+      animation: pulseRec 1.2s infinite ease-in-out;
+    }
+    @keyframes pulseRec {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.8); }
+    }
+    #hud-chapter-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #f8fafc;
+      margin-bottom: 4px;
+    }
+    #hud-feature-tag {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 5px;
+      font-family: ui-monospace, monospace;
+    }
+    #hud-feature-desc {
+      font-size: 11.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    /* Cinema Subtitle Overlay */
+    #subtitle-overlay {
+      position: fixed;
+      bottom: 108px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      width: min(820px, 92vw);
+      text-align: center;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .sub-box {
+      display: inline-block;
+      background: rgba(8, 13, 26, 0.84);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(251, 191, 36, 0.32);
+      border-radius: 12px;
+      padding: 10px 22px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65);
+    }
+    #sub-zh {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fef3c7;
+      letter-spacing: 0.4px;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+    }
+    #sub-en {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-top: 3px;
+      letter-spacing: 0.3px;
+    }
+
+    /* Bottom Vibe Video Player Bar */
+    #video-player-bar {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      width: min(980px, 96vw);
+      background: rgba(10, 15, 29, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid rgba(148, 163, 184, 0.28);
+      border-radius: 14px;
+      padding: 9px 14px 10px 14px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.75);
+    }
+    .chapter-ribbon {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+      margin-bottom: 7px;
+    }
+    .chap-btn {
+      appearance: none;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(30, 41, 59, 0.65);
+      color: #94a3b8;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 4px 4px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chap-btn:hover {
+      background: rgba(51, 65, 85, 0.9);
+      color: #f8fafc;
+    }
+    .chap-btn.active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.28), rgba(2, 132, 199, 0.32));
+      border-color: #fbbf24;
+      color: #fde68a;
+    }
+    .player-controls-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ctrl-btn {
+      appearance: none;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      background: rgba(30, 41, 59, 0.9);
+      color: #f8fafc;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 6px 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.16s;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .ctrl-btn:hover {
+      background: #334155;
+      border-color: #fbbf24;
+    }
+    .ctrl-btn.primary {
+      background: #f59e0b;
+      border-color: #fef08a;
+      color: #0f172a;
+    }
+    .ctrl-btn.recording {
+      background: #e11d48;
+      border-color: #fda4af;
+      color: #ffffff;
+    }
+    #video-scrubber {
+      flex: 1;
+      height: 6px;
+      accent-color: #f59e0b;
+      cursor: pointer;
+    }
+    .timecode {
+      font-family: ui-monospace, monospace;
+      font-size: 11.5px;
+      color: #fde68a;
+      min-width: 84px;
+      text-align: center;
+    }
+    select.speed-sel {
+      background: rgba(30, 41, 59, 0.9);
+      color: #e2e8f0;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 7px;
+      padding: 5px 7px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+
+    /* Collapsible Panel Controls */
+    .fold-btn {
+      appearance: none;
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      background: rgba(30, 41, 59, 0.92);
+      color: #fde68a;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      white-space: nowrap;
+      margin-left: 6px;
+    }
+    .fold-btn:hover {
+      background: #f59e0b;
+      color: #0f172a;
+      border-color: #fef08a;
+    }
+
+    #ui-panel.collapsed {
+      width: auto;
+      max-width: 92vw;
+      padding: 9px 13px;
+      overflow: hidden;
+    }
+    #ui-panel.collapsed .title-row {
+      border-bottom: none;
+      padding-bottom: 0;
+      margin-bottom: 0;
+      gap: 8px;
+    }
+    #ui-panel.collapsed .ui-panel-body {
+      display: none;
+    }
+
+    #feature-hud.collapsed {
+      width: auto;
+      max-width: 92vw;
+      padding: 9px 13px;
+    }
+    #feature-hud.collapsed .hud-top-row {
+      margin-bottom: 0;
+      gap: 8px;
+    }
+    #feature-hud.collapsed .hud-body {
+      display: none;
+    }
+
+    #video-player-bar.collapsed {
+      width: min(520px, 94vw);
+      padding: 7px 12px;
+    }
+    #video-player-bar.collapsed #chapter-ribbon,
+    #video-player-bar.collapsed #btn-replay-video,
+    #video-player-bar.collapsed #speed-select,
+    #video-player-bar.collapsed #btn-audio,
+    #video-player-bar.collapsed #btn-record-video {
+      display: none;
+    }
+
+    #subtitle-overlay.sub-low {
+      bottom: 64px;
+    }
+    #subtitle-overlay.sub-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Top-Center Quick Fold-All Pill */
+    #top-quick-bar {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      display: flex;
+      gap: 8px;
+      background: rgba(10, 15, 29, 0.78);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 99px;
+      padding: 5px 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    @media (max-width: 900px) {
+      #feature-hud { display: none; }
+      .chapter-ribbon { grid-template-columns: repeat(4, 1fr); }
+    }
+  :root{--accent:#b9decf;--panel:rgba(13,23,32,.91)}
+body{background:#111d2b;color:#e6ebe8}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #b9decf;outline-offset:4px}
+#studio-header{position:fixed;z-index:21;top:28px;left:30px;pointer-events:none}
+#studio-header .eyebrow{font:10px ui-monospace,monospace;letter-spacing:3px;color:#b9decf;margin-bottom:10px}
+#studio-header h1{font-size:29px;letter-spacing:4px;font-weight:500;color:#f1eee4}
+#studio-header h1 small{font:10px ui-monospace,monospace;letter-spacing:1px;color:#a9b8c1;margin-left:14px}
+#studio-header p{color:#8d9da8;font-size:11px;letter-spacing:1px;margin-top:8px}
+#ui-panel{top:140px;left:30px;width:284px;border:1px solid #ffffff18;background:var(--panel);border-radius:12px;box-shadow:0 12px 38px #0003;max-height:calc(100dvh - 300px);overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#5a706e transparent}
+#ui-panel .btn-grid,#ui-panel .btn-grid-3{min-width:0}#ui-panel .btn{min-width:0}#ui-panel .sec-lbl{flex-wrap:wrap;gap:5px}
+#studio-header{padding:14px 18px 16px;border-radius:12px;background:linear-gradient(120deg,rgba(13,25,38,.9),rgba(13,25,38,.72));border:1px solid #ffffff18;text-shadow:none;max-width:calc(100vw - 40px);box-sizing:border-box;transition:background .35s}
+#studio-header p{color:#bdcbd3;line-height:1.7}
+#studio-header .eyebrow{line-height:1.6}
+body[data-sky-tone="light"] #studio-header{background:linear-gradient(120deg,rgba(245,248,250,.96),rgba(236,243,247,.90));border-color:#ffffffa6}
+body[data-sky-tone="light"] #studio-header h1{color:#203744}
+body[data-sky-tone="light"] #studio-header h1 small,body[data-sky-tone="light"] #studio-header p{color:#425b68}
+body[data-sky-tone="light"] #studio-header .eyebrow{color:#336353}
+#ui-panel.collapsed{width:240px;padding:12px 14px}
+.title-row h1{font-size:12px;font-weight:500;color:#e6eae4;letter-spacing:1px}
+.tag{background:#ffffff09;border:1px solid #ffffff12;color:#9baeb8;font-size:9px;font-weight:400}
+.fold-btn{background:#ffffff06;color:#9eafb9;border-color:#ffffff16;font-weight:400}
+button.btn{font-weight:400;background:#ffffff04;border-color:#ffffff12;padding:8px 5px;white-space:normal;line-height:1.5}
+button.btn.active{background:#b9decf18;border-color:#b9decf60;color:#cee6db;box-shadow:none}
+button.btn:hover{background:#b9decf12;border-color:#b9decf60}
+.sec-lbl{margin-top:15px;font-weight:400;font-size:10px;color:#879ba8}
+input[type=range]{accent-color:#b9decf}
+.slider-line{font-size:10px;gap:6px}.slider-line span{flex:0 0 120px}
+#top-quick-bar{left:auto;right:30px;top:28px;transform:none;border:1px solid #ffffff14;background:var(--panel);box-shadow:none;border-radius:8px;padding:6px}
+#feature-hud{top:85px;right:30px;background:var(--panel);border:1px solid #ffffff14;box-shadow:none;border-radius:10px;width:280px}
+#feature-hud.collapsed{padding:10px 12px}
+.mode-pill,.mode-pill.manual{color:#cce5da;border-color:#b9decf30;background:#b9decf08;font-weight:400;font-size:10px}
+#mode-dot{background:#b9decf;box-shadow:none}.hud-top-row #chap-counter{font-size:9px!important}
+#video-player-bar{width:calc(100% - 60px);max-width:1100px;bottom:22px;background:var(--panel);border:1px solid #ffffff18;border-radius:12px;box-shadow:0 10px 28px #0004;padding:12px}
+.chapter-ribbon{gap:4px;margin-bottom:10px}
+.chap-btn{border-color:#ffffff12;background:#ffffff03;color:#8f9eaa;font-weight:400;font-size:10px;padding:8px 3px}
+.chap-btn.active{background:#b9decf12;border-color:#b9decf50;color:#d7e9df;box-shadow:none}
+.ctrl-btn{font-size:10px;font-weight:400;background:#ffffff06;border-color:#ffffff12;color:#afbdc7}
+.ctrl-btn.primary{background:#c5decd;color:#182d28;border-color:#c5decd}
+.timecode{font-size:10px;color:#a4b7c0}.speed-sel{font-size:10px;background:#1d2b35;border-color:#ffffff12}
+#subtitle-overlay{bottom:132px;max-width:760px;width:calc(100% - 72px)}
+.sub-box{background:#111c29d9;border-color:#ffffff14;box-shadow:none;border-radius:8px;padding:9px 16px}
+#sub-zh{font-size:11px;color:#e1e4dc;font-weight:400}#sub-en{font-size:9px;color:#8ea1ae}
+#detail-card{position:fixed;right:30px;bottom:145px;z-index:28;width:280px;border:1px solid #b9decf30;background:var(--panel);padding:20px;border-radius:12px;box-shadow:0 20px 60px #0004}
+#detail-card[hidden]{display:none}#detail-kicker{font:9px ui-monospace,monospace;letter-spacing:2px;color:#b9decf}
+#detail-title{font-size:20px;letter-spacing:2px;margin:12px 0 10px;font-weight:500;color:#efece3}
+#detail-body{font-size:12px;line-height:1.9;color:#a4b6c1}#detail-close{position:absolute;right:12px;top:10px;border:0;background:none;color:#a9bdc6;cursor:pointer;font-size:18px}
+#detail-focus{margin-top:18px;width:100%;padding:9px;border:1px solid #b9decf44;background:#b9decf0b;color:#cee2d8;border-radius:6px;cursor:pointer;font-size:11px}
+#hotspot-layer{position:fixed;inset:0;pointer-events:none;z-index:15}
+.scene-hotspot{position:absolute;left:0;top:0;pointer-events:auto;transform:translate(-50%,-50%);width:27px;height:27px;border-radius:50%;border:1px solid #c6e9d481;background:#132c2eda;color:#dcebdd;cursor:pointer;font:10px ui-monospace,monospace;box-shadow:0 0 0 5px #a9e3cf0b}
+.scene-hotspot:hover{background:#c9dfd2;color:#1b3032}.scene-hotspot::after{content:attr(aria-label);position:absolute;left:34px;top:3px;white-space:nowrap;font:10px system-ui;color:#d6e2e2;background:#122530df;padding:4px 7px;border-radius:3px;opacity:0;pointer-events:none}.scene-hotspot:hover::after,.scene-hotspot:focus-visible::after{opacity:1}
+#scene-note{position:fixed;left:30px;bottom:136px;color:#80929e;font:9px ui-monospace,monospace;letter-spacing:1px;pointer-events:none}
+#toast{position:fixed;bottom:150px;left:50%;transform:translateX(-50%);background:#142a30ee;color:#d0e4db;padding:10px 20px;border:1px solid #b9decf30;border-radius:8px;font-size:11px;z-index:40;pointer-events:none;opacity:0;transition:opacity .2s}
+#loading-screen{position:fixed;inset:0;z-index:90;background:#111d2b;display:grid;place-content:center;text-align:center;color:#b9decf;letter-spacing:3px;font-size:14px;transition:opacity .4s}
+#loading-screen small{display:block;margin-top:14px;letter-spacing:1px;color:#8196a3;font-size:11px}
+#bottom-hint{display:none!important}
+@media(max-width:900px){#studio-header{top:22px;left:20px}#studio-header h1{font-size:24px}#studio-header h1 small{display:none}#top-quick-bar{top:22px;right:20px}#ui-panel{top:125px;left:20px}#scene-note{display:none}#video-player-bar{width:calc(100% - 32px);bottom:16px}.chapter-ribbon{grid-template-columns:repeat(4,1fr)}#subtitle-overlay{bottom:170px}#detail-card{right:20px;bottom:178px}}
+@media(max-width:600px){#studio-header{top:20px;left:18px}#studio-header h1{font-size:22px;letter-spacing:2px}#studio-header .eyebrow{font-size:8px;letter-spacing:2px}#studio-header p{font-size:9px}#top-quick-bar{top:104px;left:18px;right:auto;padding:4px}#top-quick-bar .fold-btn{font-size:9px}#ui-panel{top:151px;left:18px;max-height:calc(100dvh - 270px);width:calc(100vw - 36px)}#ui-panel.collapsed{width:230px}#video-player-bar{padding:10px}#video-player-bar #btn-audio,#video-player-bar #speed-select,#video-player-bar #btn-replay-video,#video-player-bar #btn-record-video{display:none}.player-controls-row{gap:6px;flex-wrap:nowrap}#video-scrubber{min-width:35px}#video-timecode{font-size:9px}.chapter-ribbon{display:none}#btn-fold-player{display:none}#subtitle-overlay{bottom:87px;max-width:95vw;width:calc(100% - 36px)}#detail-card{bottom:92px;right:18px;width:calc(100vw - 36px)}#detail-body{line-height:1.7}#detail-title{font-size:17px}#toast{bottom:100px;width:80%;text-align:center}.scene-hotspot{width:25px;height:25px}#video-player-bar.collapsed{width:calc(100% - 32px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+#ui-panel{top:170px;max-height:calc(100dvh - 195px)}
+@media(max-width:900px){#ui-panel{top:155px;max-height:calc(100dvh - 180px)}}
+@media(max-width:600px){#studio-header{padding:12px 14px;max-width:calc(100vw - 36px)}#top-quick-bar{top:142px}#ui-panel{top:187px;max-height:calc(100dvh - 212px)}}
+
+#scene-note{bottom:24px}#detail-card{bottom:28px}#toast{bottom:30px}@media(max-width:600px){#detail-card{bottom:18px}#toast{bottom:20px}}
+</style>
+  
+</head>
+<body>
+  <div id="loading-screen" role="status">桜町三丁目<small>正在布置微缩街区…</small></div>
+  <header id="studio-header"><div class="eyebrow">HOSHINO · MINIATURE ARCHIVE / 001</div><h1>桜町三丁目<small>1:35 DIORAMA</small></h1><p>雨落街角，灯还亮着。 / 星野マート 24H</p></header>
+  <div id="hotspot-layer" aria-label="街区细节"></div>
+  <aside id="detail-card" hidden aria-labelledby="detail-title"><button id="detail-close" aria-label="关闭细节卡片">×</button><div id="detail-kicker">STREET STORY</div><h2 id="detail-title"></h2><p id="detail-body"></p></aside>
+  <div id="scene-note">拖动查看 · 松手恢复环绕 · R 回到全景</div><div id="toast" role="status"></div>
+  <!-- Top-Center One-Click Fold/Expand All Panels Bar -->
+  <div id="top-quick-bar">
+    <button class="fold-btn" id="btn-fold-all" style="margin-left:0;">👁️ 展开全部面板 (快捷键 H)</button>
+    <button class="fold-btn" id="btn-home" style="margin-left:0;">回到全景</button><button class="fold-btn" id="btn-photo" style="margin-left:0;">保存画面</button><button class="fold-btn" id="btn-toggle-sub" style="margin-left:0;">💬 字幕: 开</button>
+  </div>
+
+  <!-- Left Interactive Control Panel (Collapsible & Clickable Anytime) -->
+  <div id="ui-panel" class="director-active collapsed">
+    <div class="title-row">
+      <h1>场景工作台</h1>
+      <div style="display:flex; align-items:center; gap:4px;">
+        <span class="tag" id="fps-badge">⚡ 60 FPS</span>
+        <button class="fold-btn" id="btn-fold-ui" title="折叠或展开左上角控制框">▾ 展开</button>
+      </div>
+    </div>
+
+    <div class="ui-panel-body"><output id="perf-details" hidden aria-hidden="true"></output><div class="sec-lbl">街角小故事 / 点击查看</div><div id="detail-list" class="btn-grid"></div><button class="btn" id="btn-hotspots" style="width:100%;margin-top:6px">细节标记 · 开</button>
+      <div class="sec-lbl">
+        <span>天空与时间氛围 (Time & Sky)</span>
+        <span id="sky-label" style="color:#fde68a;">🌆 紫黄雨后黄昏</span>
+      </div>
+      <div class="btn-grid-3">
+        <button class="btn" data-sky="rainNight">🌧️ 雨夜深蓝</button>
+        <button class="btn active" data-sky="afterRainDusk">🌆 雨后黄昏</button>
+        <button class="btn" data-sky="overcastDay">☁️ 湿润白昼</button>
+      </div>
+
+      <div class="sec-lbl">微缩模型观察机位 (Camera)</div>
+      <div class="btn-grid">
+        <button class="btn active" data-cam="iso">📦 微缩盒景等轴测</button>
+        <button class="btn" data-cam="park">🌸 后方樱花小公园</button>
+        <button class="btn" data-cam="traffic">🚗 街道车流与行人</button>
+        <button class="btn" data-cam="spill">✨ 窗格暖光投射街面</button>
+        <button class="btn" data-cam="front">🪟 落地窗透视店内</button>
+        <button class="btn" data-cam="vending">🥤 自动贩卖机特写</button>
+        <button class="btn" data-cam="pylon">🪧 街角立牌与海报</button>
+        <button class="btn" data-cam="shelves">🍱 便当柜与货架区</button>
+      </div>
+
+      <div class="btn-grid" style="margin-top:5px"><button class="btn" data-cam="courtyard">🏡 绿瓦庭院独栋</button><button class="btn" data-cam="garden">🎋 木造縁側小院</button><button class="btn" data-cam="residential">🏘️ 住宅街与窗光</button></div><div class="btn-grid" style="margin-top:5px"><button class="btn" data-cam="teahouse">茶屋窗光</button><button class="btn" data-cam="apartment">公寓窗光</button><button class="btn" data-cam="modern">现代住宅窗光</button><button class="btn" data-cam="bookstore">古书店窗光</button></div><div class="slider-line"><span>住宅窗光与柔光束</span><input type="range" aria-label="住宅窗光与柔光束" id="home-light-slider" min="0" max="1.6" step="0.05" value="1"></div><div class="sec-lbl">天气与降水</div><div class="btn-grid-3"><button class="btn" data-weather="clear">无降水</button><button class="btn active" data-weather="rain">🌧️ 雨天</button><button class="btn" data-weather="snow">❄️ 雪天</button></div><div class="sec-lbl">动态与拆解控制</div><div class="slider-line"><span>降水密度 <output id="rain-output">60%</output></span><input type="range" aria-label="降水密度" id="rain-density" min="0" max="100" step="5" value="60"></div>
+      <div class="btn-grid">
+        <button class="btn active" id="toggle-rain">🌧️ 降雨与雨痕: 开</button>
+        <button class="btn active" id="toggle-ink">✒️ 三渲二墨线: 开</button>
+        <button class="btn active" id="toggle-traffic">🚗 车流与行人: 开</button>
+        <button class="btn active" id="toggle-sakura">🌸 樱花瓣飘落: 开</button>
+        <button class="btn" id="toggle-door">🚪 自动门: 手动开关</button>
+        <button class="btn" id="toggle-roof">🏠 掀开屋顶俯瞰店内</button>
+      </div>
+
+      <div class="slider-line">
+        <span>店内投射街面光强</span>
+        <input type="range" id="spill-slider" aria-label="店内投射街面光强" min="0.2" max="1.6" step="0.05" value="1.1" />
+      </div>
+      <div class="slider-line">
+        <span>雨夜地面镜面反射</span>
+        <input type="range" id="wet-slider" aria-label="雨夜地面镜面反射" min="0.0" max="0.85" step="0.05" value="0.55" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Top-Right Live Video Director Callout Card (Collapsible) -->
+  <div id="feature-hud" class="collapsed">
+    <div class="hud-top-row">
+      <span class="mode-pill" id="mode-badge"><span class="rec-dot" id="mode-dot"></span><span id="mode-text">🎬 全功能大片巡礼中</span></span>
+      <span style="font-size:11px; color:#94a3b8; font-family:ui-monospace,monospace;" id="chap-counter">CH 01 / 08</span>
+      <button class="fold-btn" id="btn-fold-hud" title="折叠或展开右上角解说框">▾ 展开</button>
+    </div>
+    <div class="hud-body">
+      <div id="hud-chapter-title">01 • 1:35 微缩盒景等轴测全景</div>
+      <div id="hud-feature-tag">当前演示控件: [📦 微缩盒景等轴测]</div>
+      <div id="hud-feature-desc">
+        25° 长焦微距镜头消除透视畸变，围绕胡桃木底座、黄铜铭牌与星野マート 24H 便利店进行电影级环绕运镜。
+      </div>
+    </div>
+  </div>
+
+  <!-- Synchronized Cinema Subtitle Overlay -->
+  <div id="subtitle-overlay">
+    <div class="sub-box">
+      <div id="sub-zh">欢迎来到「星野マート 24H」1:35 雨夜街角三渲二微缩盒景全功能演示视频</div>
+      <div id="sub-en">Welcome to the Hoshino Mart 24H 1:35 Cel-Shaded Miniature Diorama Full Feature Showcase</div>
+    </div>
+  </div>
+
+  <!-- Bottom Cinema Timeline & Video Exporter Bar (Collapsible) -->
+  <div id="video-player-bar">
+    <div class="chapter-ribbon" id="chapter-ribbon">
+      <button class="chap-btn" data-seek="0">01 盒景全景</button>
+      <button class="chap-btn" data-seek="8">02 夜樱公园</button>
+      <button class="chap-btn" data-seek="16">03 车流行人</button>
+      <button class="chap-btn" data-seek="24">04 天空与暖光</button>
+      <button class="chap-btn" data-seek="32">05 自动门雨痕</button>
+      <button class="chap-btn" data-seek="39">06 贩卖机立牌</button>
+      <button class="chap-btn" data-seek="46">07 掀顶看店内</button>
+      <button class="chap-btn" data-seek="54">08 墨线对比</button>
+    </div>
+    <div class="player-controls-row">
+      <button class="ctrl-btn primary" id="btn-play-video">⏸ 暂停巡礼</button>
+      <button class="ctrl-btn" id="btn-replay-video">↺ 重播</button>
+      <input type="range" aria-label="巡游时间" id="video-scrubber" min="0" max="60" step="0.05" value="0" />
+      <span class="timecode" id="video-timecode">00:00 / 01:00</span>
+      <select class="speed-sel" id="speed-select" title="播放倍速">
+        <option value="0.5">0.5x 慢放</option>
+        <option value="1" selected>1.0x 原速</option>
+        <option value="1.5">1.5x 快进</option>
+        <option value="2">2.0x 极速</option>
+      </select>
+      <button class="ctrl-btn" id="btn-audio">🔇 雨夜音效: 关</button>
+      <button class="ctrl-btn" id="btn-record-video">🎥 录制导出视频</button>
+      <button class="fold-btn" id="btn-fold-player" title="折叠或展开底部播控框">▾ 精简</button>
+    </div>
+  </div>
+
+  <div id="bottom-hint" style="display:none;">左键旋转微缩模型 • 右键平移 • 滚轮推进特写</div>
+  <div id="canvas-container"></div>
+
+  <!-- BUNDLED_SCENE -->
+</body>
+</html>

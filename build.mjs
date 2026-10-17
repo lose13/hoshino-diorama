@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import {build} from 'esbuild';
+import {fileURLToPath} from 'node:url';
+import vm from 'node:vm';
+const source=fs.readFileSync(new URL('./shell.html',import.meta.url),'utf8');
+const result=await build({entryPoints:[fileURLToPath(new URL('./scene.js',import.meta.url))],bundle:true,write:false,format:'iife',target:'es2020',minify:true,legalComments:'eof'});
+const script=result.outputFiles[0].text.replace(/<\/script/gi,'<\\/script');
+const html=source.replace('<!-- BUNDLED_SCENE -->',()=>`<script>${script}</script>`);
+new vm.Script(html.match(/<script>([\s\S]*?)<\/script>/)[1]);
+fs.writeFileSync(new URL('./index.html',import.meta.url),html);
+console.log('Built offline index.html');

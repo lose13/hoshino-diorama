@@ -1,0 +1,13 @@
+{
+  "name": "hoshino-miniature-diorama",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "esbuild": "0.25.12",
+    "gsap": "3.12.5",
+    "three": "0.170.0"
+  }
+}
